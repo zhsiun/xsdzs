@@ -1,0 +1,115 @@
+local player = game.Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Function to create the Screen GUI
+local function createGui()
+    -- Create the Screen GUI
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "ReverseGui"
+    screenGui.Parent = playerGui
+
+    -- Reverse Button
+    local reverseButton = Instance.new("TextButton")
+    reverseButton.Size = UDim2.new(0, 100, 0, 50)
+    reverseButton.Position = UDim2.new(0, 10, 1, -210) -- Positioned at the bottom left
+    reverseButton.Text = "Reverse" -- Initial text
+    reverseButton.Font = Enum.Font.SourceSans
+    reverseButton.TextSize = 24
+    reverseButton.BackgroundColor3 = Color3.new(0, 1, 0) -- Green color
+    reverseButton.TextColor3 = Color3.new(1, 1, 1) -- White text
+    reverseButton.Parent = screenGui
+
+    local frames = {}
+    local flashbackEnabled = false
+    local flashbackLength = 60 -- seconds
+    local flashbackSpeed = 1 -- frames to skip
+    local RS = game:GetService("RunService")
+    local LP = game.Players.LocalPlayer
+
+    local function getCharacter()
+        return LP.Character or LP.CharacterAdded:Wait()
+    end
+
+    local function getHRP(character)
+        return character:FindFirstChild("HumanoidRootPart") or character.PrimaryPart
+    end
+
+    local function advanceMovement(char, hrp, hum)
+        if #frames > flashbackLength * 500 then
+            table.remove(frames, 1)
+        end
+        table.insert(frames, {
+            hrp.CFrame,
+            hrp.Velocity,
+            hum:GetState(),
+            hum.PlatformStand,
+            char:FindFirstChildOfClass("Tool")
+        })
+    end
+
+    local function revertMovement(char, hrp, hum)
+        local num = #frames
+        if num == 0 then
+            return
+        end
+
+        for i = 1, flashbackSpeed do
+            if num <= 0 then break end
+            num = num - 1
+        end
+
+        local lastFrame = frames[num]
+        table.remove(frames, num)
+
+        hrp.CFrame = lastFrame[1]
+        hrp.Velocity = -lastFrame[2]
+        hum:ChangeState(lastFrame[3])
+        hum.PlatformStand = lastFrame[4]
+
+        local currentTool = char:FindFirstChildOfClass("Tool")
+        if lastFrame[5] then
+            if not currentTool then
+                hum:EquipTool(lastFrame[5])
+            end
+        else
+            hum:UnequipTools()
+        end
+    end
+
+    reverseButton.MouseButton1Click:Connect(function()
+        flashbackEnabled = not flashbackEnabled
+        reverseButton.BackgroundColor3 = flashbackEnabled and Color3.new(1, 0, 0) or Color3.new(0, 1, 0) -- Toggle color
+        reverseButton.Text = flashbackEnabled and "UnReverse" or "Reverse" -- Toggle text
+
+        -- Adjust all currently playing animations
+        local char = getCharacter()
+        local hum = char:FindFirstChildWhichIsA("Humanoid")
+        local animator = hum:FindFirstChildOfClass("Animator")
+
+        if animator then
+            for _, animationTrack in pairs(animator:GetPlayingAnimationTracks()) do
+                animationTrack:AdjustSpeed(flashbackEnabled and -1 or 1) -- Set speed to -1 when reversing, reset to 1 otherwise
+            end
+        end
+    end)
+
+    RS.RenderStepped:Connect(function()
+        local char = getCharacter()
+        local hrp = getHRP(char)
+        local hum = char:FindFirstChildWhichIsA("Humanoid")
+
+        if flashbackEnabled then
+            revertMovement(char, hrp, hum)
+        else
+            advanceMovement(char, hrp, hum)
+        end
+    end)
+end
+
+-- Create the GUI when the script runs
+createGui()
+
+-- Recreate the GUI after each reset
+player.CharacterAdded:Connect(function()
+    createGui()
+end)
