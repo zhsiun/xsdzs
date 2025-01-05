@@ -1,0 +1,60 @@
+local player = game.Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Function to create the Screen GUI
+local function createGui()
+    -- Create the Screen GUI
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "GetUpGui"
+    screenGui.Parent = playerGui
+
+    -- Get Up Button
+    local getUpButton = Instance.new("TextButton")
+    getUpButton.Size = UDim2.new(0, 100, 0, 50)
+    getUpButton.Position = UDim2.new(0, 120, 1, -280) -- Positioned next to the Lay Down button
+    getUpButton.Text = "Get Up"
+    getUpButton.Font = Enum.Font.SourceSans
+    getUpButton.TextSize = 24
+    getUpButton.BackgroundColor3 = Color3.new(1, 0, 0) -- Red color
+    getUpButton.TextColor3 = Color3.new(1, 1, 1) -- White text
+    getUpButton.Parent = screenGui
+
+    -- Function to make the character jump and play the animation
+    local function getUp()
+        local character = player.Character or player.CharacterAdded:Wait()
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        local animator = humanoid:FindFirstChildOfClass("Animator")
+
+        if humanoid and animator then
+            -- Stop all currently playing animations
+            for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
+                track:Stop()
+            end
+
+            -- Play the new animation
+            local animation = Instance.new("Animation")
+            animation.AnimationId = "rbxassetid://15693621070"
+            local animationTrack = animator:LoadAnimation(animation)
+
+            animationTrack:Play() -- Play the animation
+            animationTrack.TimePosition = 1.60 -- Start from 1.60 seconds
+            animationTrack:AdjustSpeed(-1) -- Play the animation in reverse
+
+            humanoid:ChangeState(Enum.HumanoidStateType.Jumping) -- Make the character jump
+
+            wait(1) -- Wait for 1 second
+            animationTrack:Stop() -- Stop the animation
+        end
+    end
+
+    -- Button click event
+    getUpButton.MouseButton1Click:Connect(getUp)
+end
+
+-- Create the GUI when the script runs
+createGui()
+
+-- Recreate the GUI after each reset
+player.CharacterAdded:Connect(function()
+    createGui()
+end)
