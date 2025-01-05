@@ -1,0 +1,31 @@
+local player = game.Players.LocalPlayer
+local screenGui = Instance.new("ScreenGui")
+screenGui.ResetOnSpawn = false -- Prevent GUI from disappearing on reset
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 200, 0, 50)
+button.Position = UDim2.new(0.9, -100, 0, 0) -- Position at the top right of the screen
+button.Text = "VC BYPASS"
+button.Font = Enum.Font.GothamBold
+button.TextScaled = true -- Scale text size automatically
+button.TextColor3 = Color3.fromRGB(255, 255, 255)
+button.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+button.BorderSizePixel = 2
+button.BorderColor3 = Color3.fromRGB(255, 255, 255)
+button.Parent = screenGui
+
+-- Add hover effect
+button.MouseEnter:Connect(function()
+    button.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
+end)
+
+button.MouseLeave:Connect(function()
+    button.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+end)
+
+-- Button click event
+button.MouseButton1Click:Connect(function()
+    local VoiceChatService = game:GetService("VoiceChatService")
+    VoiceChatService:joinVoice()
+end)
