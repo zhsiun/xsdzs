@@ -1,0 +1,21 @@
+-- Create a platform above the void to stand on
+local voidLevelY = -10  -- The Y-axis level that represents the void (adjust this value as needed)
+local platformHeight = 1  -- Thickness of the platform
+local platformSize = Vector3.new(1000, platformHeight, 1000)  -- Size of the platform (adjust to your liking)
+
+-- Create the platform part
+local platform = Instance.new("Part")
+platform.Size = platformSize
+platform.Anchored = true
+platform.CanCollide = true  -- Enable collision so you can stand on it
+platform.Position = Vector3.new(0, voidLevelY + (platformHeight / 2), 0)  -- Place the platform at the void level
+platform.Transparency = 1  -- Make the platform invisible (set to 0 if you want to see it)
+platform.Name = "VoidPlatform"
+platform.Parent = game.Workspace  -- Add the platform to the game workspace
+
+-- Optional: Prevent the platform from being destroyed by game mechanics
+platform.CanTouch = true
+platform.CanQuery = true
+
+-- You can optionally make the platform visible for debugging purposes by setting:
+-- platform.Transparency = 0.5  -- Make it semi-transparent for testing
