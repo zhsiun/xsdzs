@@ -1,0 +1,117 @@
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+
+-- Table to keep track of platforms created for players
+local platforms = {}
+local headSitActive = false -- Flag to check if HeadSit is active
+
+-- Function to create and attach a platform above a player's head
+local function createPlatformAboveHead(targetPlayer)
+    local targetCharacter = targetPlayer.Character
+    if targetCharacter then
+        local head = targetCharacter:FindFirstChild("Head")
+        if head then
+            -- Check if a platform already exists for this player
+            if not platforms[targetPlayer.UserId] then
+                -- Create a new part for the platform
+                local platform = Instance.new("Part")
+                platform.Size = Vector3.new(3, 0.2, 3) -- Size of the platform
+                platform.Anchored = true -- Keep it anchored
+                platform.CanCollide = true -- Make it collidable
+                platform.BrickColor = BrickColor.new("Bright blue") -- Change color as needed
+                platform.Material = Enum.Material.SmoothPlastic
+                platform.Parent = workspace
+
+                -- Position the platform above the player's head (lowered)
+                platform.CFrame = head.CFrame * CFrame.new(0, 0.8, 0) -- Adjusted height to be lower
+
+                -- Store the platform in the table
+                platforms[targetPlayer.UserId] = platform
+
+                -- Update the platform's position on Heartbeat
+                local connection
+                connection = game:GetService("RunService").Heartbeat:Connect(function()
+                    if targetPlayer.Character and targetPlayer.Character:FindFirstChild("Head") then
+                        local updatedHead = targetPlayer.Character.Head
+                        platform.CFrame = updatedHead.CFrame * CFrame.new(0, 0.8, 0) -- Update position above the head
+                    else
+                        -- Remove the platform if the player is no longer valid
+                        platforms[targetPlayer.UserId] = nil
+                        platform:Destroy()
+                        connection:Disconnect() -- Disconnect the event
+                    end
+                end)
+            end
+        end
+    end
+end
+
+-- Create the Screen GUI and Buttons
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "HeadSitGui"
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+-- HeadSit Button
+local toggleButton = Instance.new("TextButton", screenGui)
+toggleButton.Name = "HeadSitButton"
+toggleButton.Size = UDim2.new(0, 100, 0, 50)
+toggleButton.Position = UDim2.new(0, 10, 1, -150) -- Positioned above the invisible button
+toggleButton.Text = "HeadSit: Off"
+toggleButton.BackgroundColor3 = Color3.new(1, 0, 0) -- Red for off state
+
+-- Function to toggle HeadSit
+local function toggleHeadSit()
+    headSitActive = not headSitActive
+    if headSitActive then
+        toggleButton.Text = "HeadSit: On"
+        toggleButton.BackgroundColor3 = Color3.new(0, 1, 0) -- Green for on state
+        -- Create platforms for nearby players
+        while headSitActive do
+            for _, otherPlayer in ipairs(game.Players:GetPlayers()) do
+                if otherPlayer ~= player then
+                    createPlatformAboveHead(otherPlayer)
+                end
+            end
+            wait(5) -- Adjust the wait time to control how often we check for players
+        end
+    else
+        toggleButton.Text = "HeadSit: Off"
+        toggleButton.BackgroundColor3 = Color3.new(1, 0, 0) -- Red for off state
+        -- Cleanup all platforms
+        for userId, platform in pairs(platforms) do
+            platform:Destroy()
+            platforms[userId] = nil
+        end
+    end
+end
+
+-- Connect button click to toggle function
+toggleButton.MouseButton1Click:Connect(toggleHeadSit)
+
+-- Function to reset the GUI on character respawn
+local function resetGui()
+    -- If the GUI already exists, destroy it before creating a new one
+    if player.PlayerGui:FindFirstChild("HeadSitGui") then
+        player.PlayerGui.HeadSitGui:Destroy()
+    end
+    -- Create a new ScreenGui and Button
+    screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "HeadSitGui"
+    screenGui.Parent = player:WaitForChild("PlayerGui")
+
+    toggleButton = Instance.new("TextButton", screenGui)
+    toggleButton.Name = "HeadSitButton"
+    toggleButton.Size = UDim2.new(0, 100, 0, 50)
+    toggleButton.Position = UDim2.new(0, 10, 1, -150) -- Positioned above the invisible button
+    toggleButton.Text = "HeadSit: Off"
+    toggleButton.BackgroundColor3 = Color3.new(1, 0, 0) -- Red for off state
+
+    -- Reconnect the toggle function to the button
+    toggleButton.MouseButton1Click:Connect(toggleHeadSit)
+end
+
+-- Connect the character added event to recreate the GUI
+player.CharacterAdded:Connect(resetGui)
+
+-- Call to create the initial GUI
+resetGui()
